@@ -5,3 +5,6 @@
 .DS_Store
 *.swp
 *.retry
+
+# Word temporary lock files
+~$*.docx
