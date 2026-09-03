@@ -1,0 +1,70 @@
+---
+- name: Deploy web servers on VM1 and VM2
+  hosts: webservers
+  become: true
+  tags: [deploy]
+
+  tasks:
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Create the required web page
+      ansible.builtin.template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+        mode: "0644"
+
+    - name: Configure Nginx to listen on port 8080
+      ansible.builtin.template:
+        src: templates/sjsu-web.conf.j2
+        dest: /etc/nginx/sites-available/sjsu-web
+        mode: "0644"
+
+    - name: Enable the SJSU Nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/sjsu-web
+        dest: /etc/nginx/sites-enabled/sjsu-web
+        state: link
+
+    - name: Disable the default Nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Start and enable Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+        enabled: true
+
+- name: Undeploy web server resources from VM1 and VM2
+  hosts: webservers
+  become: true
+  tags: [undeploy]
+
+  tasks:
+    - name: Stop Nginx if it exists
+      ansible.builtin.service:
+        name: nginx
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Remove Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: absent
+        purge: true
+        autoremove: true
+
+    - name: Remove deployed configuration and web page
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/nginx/sites-enabled/sjsu-web
+        - /etc/nginx/sites-available/sjsu-web
+        - /var/www/html/index.html

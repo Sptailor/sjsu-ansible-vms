@@ -1,0 +1,7 @@
+# Vagrant machine state and generated SSH keys
+.vagrant/
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*.retry
